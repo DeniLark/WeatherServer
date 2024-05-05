@@ -1,0 +1,57 @@
+cabal-version:      3.0
+name:               WeatherServer
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Deni Lark
+maintainer:         denlarsites@gmail.com
+-- copyright:
+category:           Web
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  Weather
+    other-modules:
+        Weather.Type,
+        Weather.Types.Clouds,
+        Weather.Types.Coord,
+        Weather.Types.Main,
+        Weather.Types.Sys,
+        Weather.Types.Weather,
+        Weather.Types.Wind
+    -- other-extensions:
+    build-depends:    
+        base ^>=4.13.0.0, 
+        servant-client ^>=0.20,
+        servant-server ^>=0.20,
+        http-client-tls ^>=0.3.6.3,
+        aeson ^>=2.2.1.0,
+        yaml ^>=0.11.11.2
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable WeatherServer
+    import:           warnings
+    main-is:          Main.hs
+    -- other-modules:
+    -- other-extensions:
+    build-depends:
+        base ^>=4.13.0.0,
+        servant-client ^>=0.20,
+        servant-server ^>=0.20,
+        http-client-tls ^>=0.3.6.3,
+        aeson ^>=2.2.1.0,
+        tls == 1.8.0,
+        yaml ^>=0.11.11.2,
+        WeatherServer
+
+    hs-source-dirs:   app
+    default-language: Haskell2010
