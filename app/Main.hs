@@ -1,8 +1,14 @@
 module Main where
 
-import Weather (runWeather)
+import Config (getConfig)
+
+-- import Weather (runWeather)
 
 main :: IO ()
 main = do
-  _ <- runWeather
+  -- _ <- runWeather
+  c <- getConfig
+  case c of
+    Left e -> print e
+    Right a -> print a
   putStrLn "Done!"

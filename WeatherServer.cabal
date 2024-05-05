@@ -18,7 +18,7 @@ common warnings
 
 library
     import:           warnings
-    exposed-modules:  Weather
+    exposed-modules:  Weather, Config
     other-modules:
         Weather.Type,
         Weather.Types.Clouds,
