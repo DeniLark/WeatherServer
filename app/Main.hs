@@ -14,6 +14,7 @@ import Network.Wai.Handler.Warp (run)
 import Servant
   ( Application,
     Get,
+    Handler,
     JSON,
     Proxy (..),
     QueryParam,
@@ -22,6 +23,7 @@ import Servant
     throwError,
     type (:>),
   )
+import Servant.Client (ClientError)
 import Server.Utils (clientErrToServerErr, collectionWeather)
 import Weather (Weather, getWeather)
 
@@ -34,16 +36,26 @@ type API =
 api :: Proxy API
 api = Proxy
 
-server :: Server API
-server lat lon = do
-  eitherWeather <- liftIO $ getWeather lat lon
-  case eitherWeather of
-    Left err -> do
-      throwError $ clientErrToServerErr err
-    Right weather -> pure weather
+server :: Cache (Double, Double) Weather -> Server API
+server cache (Just lat) (Just lon) = do
+  eitherWeather <- liftIO $ do
+    maybeWeather <- Cache.lookup cache (lat, lon)
+    case maybeWeather of
+      Nothing -> do
+        putStrLn "Received from api"
+        getWeather (pure lat) (pure lon)
+      Just w -> do
+        putStrLn "Received from cache"
+        pure $ pure w
+  helperServer eitherWeather
+server _ lat lon = liftIO (getWeather lat lon) >>= helperServer
 
-app :: Application
-app = serve api server
+helperServer :: Either ClientError Weather -> Handler Weather
+helperServer (Left err) = throwError $ clientErrToServerErr err
+helperServer (Right weather) = pure weather
+
+app :: Cache (Double, Double) Weather -> Application
+app = serve api . server
 
 main :: IO ()
 main = do
@@ -59,4 +71,4 @@ main = do
       _ <- forkIO $ collectionWeather cache locations
 
       putStrLn $ "Server was started http://localhost/:" <> show port
-      run port app
+      run port $ app cache
