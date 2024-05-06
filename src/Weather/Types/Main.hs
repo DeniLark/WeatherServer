@@ -13,14 +13,14 @@ import Data.Aeson
 import GHC.Generics (Generic)
 
 data Main = Main
-  { temp :: Double,
-    feelsLike :: Double,
-    tempMin :: Double,
-    tempMax :: Double,
-    pressure :: Int,
-    humidity :: Int,
-    seaLevel :: Int,
-    grndLevel :: Int
+  { temp :: Maybe Double,
+    feelsLike :: Maybe Double,
+    tempMin :: Maybe Double,
+    tempMax :: Maybe Double,
+    pressure :: Maybe Int,
+    humidity :: Maybe Int,
+    seaLevel :: Maybe Int,
+    grndLevel :: Maybe Int
   }
   deriving (Generic)
 

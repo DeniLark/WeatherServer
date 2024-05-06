@@ -6,9 +6,9 @@ import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 
 data Sys = Sys
-  { country :: String,
-    sunrise :: Integer,
-    sunset :: Integer
+  { country :: Maybe String,
+    sunrise :: Maybe Integer,
+    sunset :: Maybe Integer
   }
   deriving (Generic)
 

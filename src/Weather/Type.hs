@@ -19,19 +19,19 @@ import Weather.Types.Weather (OneWeather)
 import Weather.Types.Wind (Wind)
 
 data Weather = Weather
-  { coord :: Coord,
-    weather :: [OneWeather],
-    base :: String,
-    wMain :: Main,
-    visibility :: Int,
-    wind :: Wind,
-    clouds :: Clouds,
-    dt :: Integer,
-    sys :: Sys,
-    timezone :: Int,
-    wId :: Integer,
-    name :: String,
-    cod :: Int
+  { coord :: Maybe Coord,
+    weather :: Maybe [OneWeather],
+    base :: Maybe String,
+    wMain :: Maybe Main,
+    visibility :: Maybe Int,
+    wind :: Maybe Wind,
+    clouds :: Maybe Clouds,
+    dt :: Maybe Integer,
+    sys :: Maybe Sys,
+    timezone :: Maybe Int,
+    wId :: Maybe Integer,
+    name :: Maybe String,
+    cod :: Maybe Int
   }
   deriving (Generic)
 

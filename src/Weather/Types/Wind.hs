@@ -6,9 +6,9 @@ import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 
 data Wind = Wind
-  { speed :: Double,
-    deg :: Int,
-    gust :: Double
+  { speed :: Maybe Double,
+    deg :: Maybe Int,
+    gust :: Maybe Double
   }
   deriving (Generic)
 

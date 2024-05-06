@@ -13,10 +13,10 @@ import Data.Aeson
 import GHC.Generics (Generic)
 
 data OneWeather = OneWeather
-  { wId :: Integer,
-    main :: String,
-    description :: String,
-    icon :: String
+  { wId :: Maybe Integer,
+    main :: Maybe String,
+    description :: Maybe String,
+    icon :: Maybe String
   }
   deriving (Generic)
 
