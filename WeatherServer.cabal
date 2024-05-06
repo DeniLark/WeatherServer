@@ -34,7 +34,8 @@ library
         servant-server ^>=0.20,
         http-client-tls ^>=0.3.6.3,
         aeson ^>=2.2.1.0,
-        yaml ^>=0.11.11.2
+        yaml ^>=0.11.11.2,
+        warp 
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -51,7 +52,7 @@ executable WeatherServer
         aeson ^>=2.2.1.0,
         tls == 1.8.0,
         yaml ^>=0.11.11.2,
+        warp,
         WeatherServer
-
     hs-source-dirs:   app
     default-language: Haskell2010

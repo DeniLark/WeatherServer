@@ -2,7 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Weather where
+module Weather
+  ( module Weather.Type,
+    runWeather,
+  )
+where
 
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant (Get, JSON, Proxy (..), QueryParam, type (:>))
@@ -39,17 +43,17 @@ queryWeather ::
   ClientM Weather
 queryWeather = client weatherAPI
 
-query :: String -> ClientM Weather
-query apiKey =
+query :: String -> Maybe Double -> Maybe Double -> ClientM Weather
+query apiKey lat lon =
   queryWeather
-    (Just 59.3957)
-    (Just 56.4605)
+    lat
+    lon
     (Just "metric")
     (Just apiKey)
 
-runWeather :: IO (Either ClientError Weather)
-runWeather = do
+runWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
+runWeather lat lon = do
   apiKey <- getEnv "WEATHER_API_KEY"
   m <- newTlsManager
   let url = BaseUrl Https "api.openweathermap.org" 443 ""
-  runClientM (query apiKey) $ mkClientEnv m url
+  runClientM (query apiKey lat lon) $ mkClientEnv m url
