@@ -2,15 +2,30 @@
 
 module Config where
 
-import Data.Yaml (FromJSON, ParseException, decodeFileEither)
+import Data.Aeson
+  ( FromJSON (parseJSON),
+    Options (fieldLabelModifier),
+    defaultOptions,
+    genericParseJSON,
+  )
+import Data.Yaml (ParseException, decodeFileEither)
 import GHC.Generics (Generic)
 
 newtype Config = Config
-  { port :: Int
+  { configPort :: Int
   }
   deriving (Generic, Show)
 
-instance FromJSON Config
+fieldModifier :: String -> String
+fieldModifier "configPort" = "port"
+fieldModifier s = s
+
+instance FromJSON Config where
+  parseJSON =
+    genericParseJSON
+      defaultOptions
+        { fieldLabelModifier = fieldModifier
+        }
 
 getConfig :: IO (Either ParseException Config)
 getConfig = decodeFileEither "config.yaml"

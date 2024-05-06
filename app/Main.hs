@@ -4,12 +4,24 @@
 
 module Main where
 
-import Config (Config (port), getConfig)
+import Config (Config (..), getConfig)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Network.Wai.Handler.Warp
+import Network.Wai.Handler.Warp (run)
 import Servant
-import Servant.Client
-import Weather
+  ( Application,
+    Get,
+    JSON,
+    Proxy (..),
+    QueryParam,
+    Server,
+    ServerError (errBody),
+    err400,
+    serve,
+    throwError,
+    type (:>),
+  )
+import Servant.Client (ClientError (..), ResponseF (responseBody))
+import Weather (Weather, runWeather)
 
 type API =
   "weather"
@@ -48,6 +60,6 @@ main = do
   case eitherConfig of
     Left e -> print e
     Right config -> do
-      let p = port config
-      putStrLn $ "Server was started http://localhost/:" <> show p
-      run p app
+      let port = configPort config
+      putStrLn $ "Server was started http://localhost/:" <> show port
+      run port app
