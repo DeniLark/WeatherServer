@@ -1,11 +1,15 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Main where
 
 import Config (Config (..), getConfig)
+import Control.Concurrent (forkIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Data.Cache (Cache)
+import qualified Data.Cache as Cache
 import Network.Wai.Handler.Warp (run)
 import Servant
   ( Application,
@@ -14,14 +18,12 @@ import Servant
     Proxy (..),
     QueryParam,
     Server,
-    ServerError (errBody),
-    err400,
     serve,
     throwError,
     type (:>),
   )
-import Servant.Client (ClientError (..), ResponseF (responseBody))
-import Weather (Weather, runWeather)
+import Server.Utils (clientErrToServerErr, collectionWeather)
+import Weather (Weather, getWeather)
 
 type API =
   "weather"
@@ -32,20 +34,9 @@ type API =
 api :: Proxy API
 api = Proxy
 
-clientErrToServerErr :: ClientError -> ServerError
-clientErrToServerErr (FailureResponse _ resp) =
-  err400 {errBody = responseBody resp}
-clientErrToServerErr (DecodeFailure _ resp) =
-  err400 {errBody = responseBody resp}
-clientErrToServerErr (UnsupportedContentType _ resp) =
-  err400 {errBody = responseBody resp}
-clientErrToServerErr (InvalidContentTypeHeader resp) =
-  err400 {errBody = responseBody resp}
-clientErrToServerErr (ConnectionError _) = err400 {errBody = "Unknown error"}
-
 server :: Server API
 server lat lon = do
-  eitherWeather <- liftIO $ runWeather lat lon
+  eitherWeather <- liftIO $ getWeather lat lon
   case eitherWeather of
     Left err -> do
       throwError $ clientErrToServerErr err
@@ -56,10 +47,16 @@ app = serve api server
 
 main :: IO ()
 main = do
+  cache :: Cache (Double, Double) Weather <- Cache.newCache Nothing
+
   eitherConfig <- getConfig
   case eitherConfig of
     Left e -> print e
     Right config -> do
       let port = configPort config
+          locations = configLocations config
+
+      _ <- forkIO $ collectionWeather cache locations
+
       putStrLn $ "Server was started http://localhost/:" <> show port
       run port app

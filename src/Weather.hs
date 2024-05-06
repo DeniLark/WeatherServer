@@ -4,7 +4,7 @@
 
 module Weather
   ( module Weather.Type,
-    runWeather,
+    getWeather,
   )
 where
 
@@ -51,8 +51,8 @@ query apiKey lat lon =
     (Just "metric")
     (Just apiKey)
 
-runWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
-runWeather lat lon = do
+getWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
+getWeather lat lon = do
   apiKey <- getEnv "WEATHER_API_KEY"
   m <- newTlsManager
   let url = BaseUrl Https "api.openweathermap.org" 443 ""

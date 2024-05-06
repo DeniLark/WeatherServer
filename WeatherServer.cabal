@@ -18,7 +18,7 @@ common warnings
 
 library
     import:           warnings
-    exposed-modules:  Weather, Config
+    exposed-modules:  Weather, Config, Server.Utils
     other-modules:
         Weather.Type,
         Weather.Types.Clouds,
@@ -35,7 +35,8 @@ library
         http-client-tls ^>=0.3.6.3,
         aeson ^>=2.2.1.0,
         yaml ^>=0.11.11.2,
-        warp 
+        warp,
+        cache
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -53,6 +54,7 @@ executable WeatherServer
         tls == 1.8.0,
         yaml ^>=0.11.11.2,
         warp,
+        cache,
         WeatherServer
     hs-source-dirs:   app
     default-language: Haskell2010
