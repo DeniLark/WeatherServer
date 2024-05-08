@@ -8,6 +8,7 @@ module Weather
   )
 where
 
+import Control.Applicative ((<|>))
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant (Get, JSON, Proxy (..), QueryParam, type (:>))
 import Servant.Client
@@ -54,6 +55,9 @@ query apiKey lat lon =
 getWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
 getWeather lat lon = do
   apiKey <- getEnv "WEATHER_API_KEY"
+  apiRoot <- getEnv "WEATHER_API_ROOT" <|> pure "api.openweathermap.org"
+
   m <- newTlsManager
-  let url = BaseUrl Https "api.openweathermap.org" 443 ""
+
+  let url = BaseUrl Https apiRoot 443 ""
   runClientM (query apiKey lat lon) $ mkClientEnv m url
