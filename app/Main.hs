@@ -34,11 +34,13 @@ import Server.Utils (clientErrToServerErr, collectionWeather)
 import System.Clock (Clock (Realtime), TimeSpec (sec), diffTimeSpec, getTime)
 import Weather (Weather, getWeather)
 
-type API =
+type WeatherAPI =
   "weather"
     :> QueryParam "lat" Double
     :> QueryParam "lon" Double
     :> Get '[JSON] Weather
+
+type API = WeatherAPI
 
 api :: Proxy API
 api = Proxy
@@ -61,7 +63,16 @@ server ::
   Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Server API
-server offsetLocations offsetTime cache (Just lat) (Just lon) = do
+server = serverWeather
+
+serverWeather ::
+  Maybe Double ->
+  Maybe Integer ->
+  Cache (Double, Double) (Weather, TimeSpec) ->
+  Maybe Double ->
+  Maybe Double ->
+  Handler Weather
+serverWeather offsetLocations offsetTime cache (Just lat) (Just lon) = do
   eitherWeather <- liftIO $ do
     keys <- Cache.keys cache
     let (targetLat, targetLon) =
@@ -84,7 +95,7 @@ server offsetLocations offsetTime cache (Just lat) (Just lon) = do
               then receivedWeatherFromCache w
               else receivedWeatherFromAPI cache lat lon
   helperServer eitherWeather
-server _ _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
+serverWeather _ _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
 
 helperServer :: Either ClientError a -> Handler a
 helperServer (Left err) = throwError $ clientErrToServerErr err

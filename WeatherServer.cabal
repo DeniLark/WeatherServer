@@ -43,7 +43,9 @@ library
         warp,
         cache,
         unbounded-delays,
-        clock
+        clock,
+        servant-swagger,
+        servant-swagger-ui
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -64,6 +66,8 @@ executable WeatherServer
         cache,
         unbounded-delays,
         clock,
+        servant-swagger,
+        servant-swagger-ui,
         WeatherServer
     hs-source-dirs:   app
     default-language: Haskell2010
