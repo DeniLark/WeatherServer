@@ -27,6 +27,7 @@ import Servant
   )
 import Servant.Client (ClientError)
 import Server.Utils (clientErrToServerErr, collectionWeather)
+import System.Clock
 import Weather (Weather, getWeather)
 
 type API =
@@ -49,7 +50,7 @@ findNeededKey (lat, lon) offset = find $ \(lat', lon') ->
 
 server ::
   Maybe Double ->
-  Cache (Double, Double) Weather ->
+  Cache (Double, Double) (Weather, TimeSpec) ->
   Server API
 server offsetLocations cache (Just lat) (Just lon) = do
   eitherWeather <- liftIO $ do
@@ -66,7 +67,7 @@ server offsetLocations cache (Just lat) (Just lon) = do
       Nothing -> do
         putStrLn "Received from api"
         getWeather (pure lat) (pure lon)
-      Just w -> do
+      Just (w, _) -> do
         putStrLn "Received from cache"
         pure $ pure w
   helperServer eitherWeather
@@ -76,12 +77,16 @@ helperServer :: Either ClientError Weather -> Handler Weather
 helperServer (Left err) = throwError $ clientErrToServerErr err
 helperServer (Right weather) = pure weather
 
-app :: Maybe Double -> Cache (Double, Double) Weather -> Application
+app :: Maybe Double -> Cache (Double, Double) (Weather, TimeSpec) -> Application
 app offsetLocations = serve api . server offsetLocations
 
 main :: IO ()
 main = do
-  cache :: Cache (Double, Double) Weather <- Cache.newCache Nothing
+  cache :: Cache (Double, Double) (Weather, TimeSpec) <- Cache.newCache Nothing
+
+  time <- getTime Realtime
+  putStr "Time: "
+  print time
 
   eitherConfig <- getConfig
   case eitherConfig of

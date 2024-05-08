@@ -10,11 +10,12 @@ import qualified Data.Cache as Cache
 import Data.Maybe (fromMaybe)
 import Servant (ServerError (errBody), err400)
 import Servant.Client (ClientError (..), ResponseF (responseBody))
+import System.Clock (Clock (Realtime), TimeSpec, getTime)
 import Weather (Weather, getWeather)
 
 collectionWeather ::
   Maybe Integer ->
-  Cache (Double, Double) Weather ->
+  Cache (Double, Double) (Weather, TimeSpec) ->
   [Location] ->
   IO ()
 collectionWeather updatePeriod cache locations = do
@@ -27,8 +28,9 @@ collectionWeather updatePeriod cache locations = do
           "Error location " <> show lat <> ", " <> show lon <> ": "
             <> show err
       Right w -> do
+        t <- getTime Realtime
         putStrLn $ show (lat, lon) <> ": insert into cache"
-        Cache.insert cache (lat, lon) w
+        Cache.insert cache (lat, lon) (w, t)
   delay $ fromMaybe 10 updatePeriod * 60000000 -- 60000000 = 1m
   collectionWeather updatePeriod cache locations
 
