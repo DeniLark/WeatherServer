@@ -27,7 +27,7 @@ import Servant
   )
 import Servant.Client (ClientError)
 import Server.Utils (clientErrToServerErr, collectionWeather)
-import System.Clock
+import System.Clock (Clock (Realtime), TimeSpec (sec), diffTimeSpec, getTime)
 import Weather (Weather, getWeather)
 
 type API =
@@ -39,7 +39,11 @@ type API =
 api :: Proxy API
 api = Proxy
 
-findNeededKey :: (Double, Double) -> Double -> [(Double, Double)] -> Maybe (Double, Double)
+findNeededKey ::
+  (Double, Double) ->
+  Double ->
+  [(Double, Double)] ->
+  Maybe (Double, Double)
 findNeededKey (lat, lon) offset = find $ \(lat', lon') ->
   and
     [ lat' - offset <= lat,
@@ -50,9 +54,10 @@ findNeededKey (lat, lon) offset = find $ \(lat', lon') ->
 
 server ::
   Maybe Double ->
+  Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Server API
-server offsetLocations cache (Just lat) (Just lon) = do
+server offsetLocations offsetTime cache (Just lat) (Just lon) = do
   eitherWeather <- liftIO $ do
     keys <- Cache.keys cache
     let (targetLat, targetLon) =
@@ -64,25 +69,53 @@ server offsetLocations cache (Just lat) (Just lon) = do
     maybeWeather <- Cache.lookup cache (targetLat, targetLon)
 
     case maybeWeather of
-      Nothing -> do
-        putStrLn "Received from api"
-        getWeather (pure lat) (pure lon)
-      Just (w, _) -> do
-        putStrLn "Received from cache"
-        pure $ pure w
+      Nothing -> receivedWeatherFromAPI cache lat lon
+      Just (w, t) -> do
+        case offsetTime of
+          Nothing -> receivedWeatherFromCache w
+          Just ot -> do
+            ct <- getTime Realtime
+            let dt = toInteger (sec (diffTimeSpec t ct)) `div` 60
+            if dt <= ot
+              then receivedWeatherFromCache w
+              else receivedWeatherFromAPI cache lat lon
   helperServer eitherWeather
-server _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
+server _ _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
 
-helperServer :: Either ClientError Weather -> Handler Weather
+receivedWeatherFromAPI ::
+  Cache (Double, Double) (Weather, TimeSpec) ->
+  Double ->
+  Double ->
+  IO (Either ClientError Weather)
+receivedWeatherFromAPI cache lat lon = do
+  putStrLn "Received from api"
+  eitherWeather <- getWeather (pure lat) (pure lon)
+
+  case eitherWeather of
+    Left err -> pure $ Left err
+    Right w -> do
+      t <- getTime Realtime
+      Cache.insert cache (lat, lon) (w, t)
+      pure $ pure w
+
+receivedWeatherFromCache :: Weather -> IO (Either ClientError Weather)
+receivedWeatherFromCache w = putStrLn "Received from cache" >> pure (pure w)
+
+helperServer :: Either ClientError a -> Handler a
 helperServer (Left err) = throwError $ clientErrToServerErr err
 helperServer (Right weather) = pure weather
 
-app :: Maybe Double -> Cache (Double, Double) (Weather, TimeSpec) -> Application
-app offsetLocations = serve api . server offsetLocations
+app ::
+  Maybe Double ->
+  Maybe Integer ->
+  Cache (Double, Double) (Weather, TimeSpec) ->
+  Application
+app offsetLocations offsetTime =
+  serve api . server offsetLocations offsetTime
 
 main :: IO ()
 main = do
-  cache :: Cache (Double, Double) (Weather, TimeSpec) <- Cache.newCache Nothing
+  cache <- Cache.newCache Nothing
 
   time <- getTime Realtime
   putStr "Time: "
@@ -96,10 +129,9 @@ main = do
           locations = configLocations config
           updatePeriod = configUpdatePeriod config
           offsetLocations = configOffsetLocations config
-
-      print offsetLocations
+          offsetTime = congigOffsetTime config
 
       _ <- forkIO $ collectionWeather updatePeriod cache locations
 
       putStrLn $ "Server was started http://localhost/:" <> show port
-      run port $ app offsetLocations cache
+      run port $ app offsetLocations offsetTime cache

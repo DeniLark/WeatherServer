@@ -10,6 +10,9 @@ locations:
     lon: -0.1276474
 
 # in minutes
-updatePeriod: 5
+updatePeriod: 15
 
 offsetLocations: 0.4
+
+# in minutes
+offsetTime: 1
