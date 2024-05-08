@@ -12,6 +12,7 @@ import Data.Cache (Cache)
 import qualified Data.Cache as Cache
 import Data.Foldable (find)
 import Data.Maybe (fromMaybe)
+import Data.Swagger (Swagger)
 import Network.Wai.Handler.Warp (run)
 import Servant
   ( Application,
@@ -23,9 +24,15 @@ import Servant
     Server,
     serve,
     throwError,
+    type (:<|>) (..),
     type (:>),
   )
 import Servant.Client (ClientError)
+import Servant.Swagger (HasSwagger (toSwagger))
+import Servant.Swagger.UI
+  ( SwaggerSchemaUI,
+    swaggerSchemaUIServer,
+  )
 import Server.Receivers
   ( receivedWeatherFromAPI,
     receivedWeatherFromCache,
@@ -40,10 +47,15 @@ type WeatherAPI =
     :> QueryParam "lon" Double
     :> Get '[JSON] Weather
 
-type API = WeatherAPI
+type API =
+  SwaggerSchemaUI "swagger-ui" "swagger.json"
+    :<|> WeatherAPI
 
 api :: Proxy API
 api = Proxy
+
+swaggerDoc :: Swagger
+swaggerDoc = toSwagger (Proxy :: Proxy WeatherAPI)
 
 findNeededKey ::
   (Double, Double) ->
@@ -63,7 +75,9 @@ server ::
   Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Server API
-server = serverWeather
+server offsetLocations offsetTime cache =
+  swaggerSchemaUIServer swaggerDoc
+    :<|> serverWeather offsetLocations offsetTime cache
 
 serverWeather ::
   Maybe Double ->
