@@ -24,8 +24,7 @@ import System.Environment (getEnv)
 import Weather.Type (Weather)
 
 type WeatherAPI =
-  "data"
-    :> "2.5"
+  "2.5"
     :> "weather"
     :> QueryParam "lat" Double
     :> QueryParam "lon" Double
@@ -55,9 +54,9 @@ query apiKey lat lon =
 getWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
 getWeather lat lon = do
   apiKey <- getEnv "WEATHER_API_KEY"
-  apiRoot <- getEnv "WEATHER_API_ROOT" <|> pure "api.openweathermap.org"
+  apiRoot <- getEnv "WEATHER_API_ROOT" <|> pure "data"
 
   m <- newTlsManager
 
-  let url = BaseUrl Https apiRoot 443 ""
+  let url = BaseUrl Https "api.openweathermap.org" 443 apiRoot
   runClientM (query apiKey lat lon) $ mkClientEnv m url
