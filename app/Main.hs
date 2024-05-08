@@ -67,8 +67,9 @@ main = do
     Right config -> do
       let port = configPort config
           locations = configLocations config
+          updatePeriod = configUpdatePeriod config
 
-      _ <- forkIO $ collectionWeather cache locations
+      _ <- forkIO $ collectionWeather updatePeriod cache locations
 
       putStrLn $ "Server was started http://localhost/:" <> show port
       run port $ app cache

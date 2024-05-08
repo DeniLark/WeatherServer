@@ -1,7 +1,11 @@
 ---
 port: 8080
+
 locations:
   - lat: 59.3957
     lon: 56.4605
   - lat: 51.5073219
     lon: -0.1276474
+
+# in minutes
+updatePeriod: 5

@@ -3,16 +3,21 @@
 module Server.Utils where
 
 import Config (Location (Location))
-import Control.Concurrent (threadDelay)
+import Control.Concurrent.Thread.Delay (delay)
 import Control.Monad (forM_)
 import Data.Cache (Cache)
 import qualified Data.Cache as Cache
+import Data.Maybe (fromMaybe)
 import Servant (ServerError (errBody), err400)
 import Servant.Client (ClientError (..), ResponseF (responseBody))
 import Weather (Weather, getWeather)
 
-collectionWeather :: Cache (Double, Double) Weather -> [Location] -> IO ()
-collectionWeather cache locations = do
+collectionWeather ::
+  Maybe Integer ->
+  Cache (Double, Double) Weather ->
+  [Location] ->
+  IO ()
+collectionWeather updatePeriod cache locations = do
   putStrLn "Collection weather"
   forM_ locations $ \(Location lat lon) -> do
     eitherWeather <- getWeather (pure lat) (pure lon)
@@ -24,8 +29,8 @@ collectionWeather cache locations = do
       Right w -> do
         putStrLn $ show (lat, lon) <> ": insert into cache"
         Cache.insert cache (lat, lon) w
-  threadDelay 120000000 -- 60000000 = 1m
-  collectionWeather cache locations
+  delay $ fromMaybe 10 updatePeriod * 60000000 -- 60000000 = 1m
+  collectionWeather updatePeriod cache locations
 
 clientErrToServerErr :: ClientError -> ServerError
 clientErrToServerErr (FailureResponse _ resp) =

@@ -21,13 +21,15 @@ instance FromJSON Location
 
 data Config = Config
   { configPort :: Int,
-    configLocations :: [Location]
+    configLocations :: [Location],
+    configUpdatePeriod :: Maybe Integer -- in minutes
   }
   deriving (Generic, Show)
 
 fieldModifier :: String -> String
 fieldModifier "configPort" = "port"
 fieldModifier "configLocations" = "locations"
+fieldModifier "configUpdatePeriod" = "updatePeriod"
 fieldModifier s = s
 
 instance FromJSON Config where
