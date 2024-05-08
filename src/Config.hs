@@ -21,7 +21,7 @@ instance FromJSON Location
 
 data Config = Config
   { configPort :: Int,
-    configLocations :: [Location],
+    configLocations :: Maybe [Location],
     configUpdatePeriod :: Maybe Integer, -- in minutes
     configOffsetLocations :: Maybe Double,
     congigOffsetTime :: Maybe Integer -- in minutes

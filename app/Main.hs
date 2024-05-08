@@ -132,7 +132,7 @@ main = do
     Left e -> print e
     Right config -> do
       let port = configPort config
-          locations = configLocations config
+          locations = concat $ configLocations config
           updatePeriod = configUpdatePeriod config
           offsetLocations = configOffsetLocations config
           offsetTime = congigOffsetTime config
