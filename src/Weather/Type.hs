@@ -10,6 +10,7 @@ import Data.Aeson
     genericParseJSON,
     genericToEncoding,
   )
+import Data.Swagger (ToSchema)
 import GHC.Generics (Generic)
 import Weather.Types.Clouds (Clouds)
 import Weather.Types.Coord (Coord)
@@ -39,6 +40,8 @@ fieldModifier :: String -> String
 fieldModifier "wId" = "id"
 fieldModifier "wMain" = "main"
 fieldModifier s = s
+
+instance ToSchema Weather
 
 instance FromJSON Weather where
   parseJSON =

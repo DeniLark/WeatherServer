@@ -3,6 +3,7 @@
 module Weather.Types.Wind where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Swagger (ToSchema)
 import GHC.Generics (Generic)
 
 data Wind = Wind
@@ -11,6 +12,8 @@ data Wind = Wind
     gust :: Maybe Double
   }
   deriving (Generic)
+
+instance ToSchema Wind
 
 instance FromJSON Wind
 

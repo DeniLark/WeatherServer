@@ -3,6 +3,7 @@
 module Weather.Types.Sys where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Swagger (ToSchema)
 import GHC.Generics (Generic)
 
 data Sys = Sys
@@ -11,6 +12,8 @@ data Sys = Sys
     sunset :: Maybe Integer
   }
   deriving (Generic)
+
+instance ToSchema Sys
 
 instance FromJSON Sys
 

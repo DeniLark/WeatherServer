@@ -10,6 +10,7 @@ import Data.Aeson
     genericParseJSON,
     genericToEncoding,
   )
+import Data.Swagger (ToSchema)
 import GHC.Generics (Generic)
 
 data Main = Main
@@ -45,3 +46,5 @@ instance ToJSON Main where
       defaultOptions
         { fieldLabelModifier = fieldModifier
         }
+
+instance ToSchema Main

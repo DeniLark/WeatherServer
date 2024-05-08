@@ -10,6 +10,7 @@ import Data.Aeson
     genericParseJSON,
     genericToEncoding,
   )
+import Data.Swagger (ToSchema)
 import GHC.Generics (Generic)
 
 data OneWeather = OneWeather
@@ -23,6 +24,8 @@ data OneWeather = OneWeather
 fieldModifier :: String -> String
 fieldModifier "wId" = "id"
 fieldModifier s = s
+
+instance ToSchema OneWeather
 
 instance FromJSON OneWeather where
   parseJSON =
