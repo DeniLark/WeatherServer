@@ -10,6 +10,8 @@ import Control.Concurrent (forkIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Cache (Cache)
 import qualified Data.Cache as Cache
+import Data.Foldable (find)
+import Data.Maybe (fromMaybe)
 import Network.Wai.Handler.Warp (run)
 import Servant
   ( Application,
@@ -36,10 +38,30 @@ type API =
 api :: Proxy API
 api = Proxy
 
-server :: Cache (Double, Double) Weather -> Server API
-server cache (Just lat) (Just lon) = do
+findNeededKey :: (Double, Double) -> Double -> [(Double, Double)] -> Maybe (Double, Double)
+findNeededKey (lat, lon) offset = find $ \(lat', lon') ->
+  and
+    [ lat' - offset <= lat,
+      lat <= lat' + offset,
+      lon' - offset <= lon,
+      lon <= lon' + offset
+    ]
+
+server ::
+  Maybe Double ->
+  Cache (Double, Double) Weather ->
+  Server API
+server offsetLocations cache (Just lat) (Just lon) = do
   eitherWeather <- liftIO $ do
-    maybeWeather <- Cache.lookup cache (lat, lon)
+    keys <- Cache.keys cache
+    let (targetLat, targetLon) =
+          maybe
+            (lat, lon)
+            (fromMaybe (lat, lon) . flip (findNeededKey (lat, lon)) keys)
+            offsetLocations
+
+    maybeWeather <- Cache.lookup cache (targetLat, targetLon)
+
     case maybeWeather of
       Nothing -> do
         putStrLn "Received from api"
@@ -48,14 +70,14 @@ server cache (Just lat) (Just lon) = do
         putStrLn "Received from cache"
         pure $ pure w
   helperServer eitherWeather
-server _ lat lon = liftIO (getWeather lat lon) >>= helperServer
+server _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
 
 helperServer :: Either ClientError Weather -> Handler Weather
 helperServer (Left err) = throwError $ clientErrToServerErr err
 helperServer (Right weather) = pure weather
 
-app :: Cache (Double, Double) Weather -> Application
-app = serve api . server
+app :: Maybe Double -> Cache (Double, Double) Weather -> Application
+app offsetLocations = serve api . server offsetLocations
 
 main :: IO ()
 main = do
@@ -68,8 +90,11 @@ main = do
       let port = configPort config
           locations = configLocations config
           updatePeriod = configUpdatePeriod config
+          offsetLocations = configOffsetLocations config
+
+      print offsetLocations
 
       _ <- forkIO $ collectionWeather updatePeriod cache locations
 
       putStrLn $ "Server was started http://localhost/:" <> show port
-      run port $ app cache
+      run port $ app offsetLocations cache
