@@ -13,6 +13,8 @@ import qualified Data.Cache as Cache
 import Data.Foldable (find)
 import Data.Maybe (fromMaybe)
 import Data.Swagger (Swagger)
+import Network.HTTP.Client (Manager)
+import Network.HTTP.Client.TLS (newTlsManager)
 import Network.Wai.Handler.Warp (run)
 import Servant
   ( Application,
@@ -71,22 +73,24 @@ findNeededKey (lat, lon) offset = find $ \(lat', lon') ->
     ]
 
 server ::
+  Manager ->
   Maybe Double ->
   Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Server API
-server offsetLocations offsetTime cache =
+server tlsManager offsetLocations offsetTime cache =
   swaggerSchemaUIServer swaggerDoc
-    :<|> serverWeather offsetLocations offsetTime cache
+    :<|> serverWeather tlsManager offsetLocations offsetTime cache
 
 serverWeather ::
+  Manager ->
   Maybe Double ->
   Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Maybe Double ->
   Maybe Double ->
   Handler Weather
-serverWeather offsetLocations offsetTime cache (Just lat) (Just lon) = do
+serverWeather tlsManager offsetLocations offsetTime cache (Just lat) (Just lon) = do
   eitherWeather <- liftIO $ do
     keys <- Cache.keys cache
     let (targetLat, targetLon) =
@@ -98,7 +102,7 @@ serverWeather offsetLocations offsetTime cache (Just lat) (Just lon) = do
     maybeWeather <- Cache.lookup cache (targetLat, targetLon)
 
     case maybeWeather of
-      Nothing -> receivedWeatherFromAPI cache lat lon
+      Nothing -> receivedWeatherFromAPI tlsManager cache lat lon
       Just (w, t) -> do
         case offsetTime of
           Nothing -> receivedWeatherFromCache w
@@ -107,25 +111,27 @@ serverWeather offsetLocations offsetTime cache (Just lat) (Just lon) = do
             let dt = toInteger (sec (diffTimeSpec t ct)) `div` 60
             if dt <= ot
               then receivedWeatherFromCache w
-              else receivedWeatherFromAPI cache lat lon
+              else receivedWeatherFromAPI tlsManager cache lat lon
   helperServer eitherWeather
-serverWeather _ _ _ lat lon = liftIO (getWeather lat lon) >>= helperServer
+serverWeather tlsManager _ _ _ lat lon = liftIO (getWeather tlsManager lat lon) >>= helperServer
 
 helperServer :: Either ClientError a -> Handler a
 helperServer (Left err) = throwError $ clientErrToServerErr err
 helperServer (Right a) = pure a
 
 app ::
+  Manager ->
   Maybe Double ->
   Maybe Integer ->
   Cache (Double, Double) (Weather, TimeSpec) ->
   Application
-app offsetLocations offsetTime =
-  serve api . server offsetLocations offsetTime
+app tlsManager offsetLocations offsetTime =
+  serve api . server tlsManager offsetLocations offsetTime
 
 main :: IO ()
 main = do
   cache <- Cache.newCache Nothing
+  tlsManager <- newTlsManager
 
   eitherConfig <- getConfig
   case eitherConfig of
@@ -137,7 +143,7 @@ main = do
           offsetLocations = configOffsetLocations config
           offsetTime = congigOffsetTime config
 
-      _ <- forkIO $ collectionWeather updatePeriod cache locations
+      _ <- forkIO $ collectionWeather tlsManager updatePeriod cache locations
 
-      putStrLn $ "Server was started http://localhost/:" <> show port
-      run port $ app offsetLocations offsetTime cache
+      putStrLn $ "Server was started http://localhost:" <> show port
+      run port $ app tlsManager offsetLocations offsetTime cache

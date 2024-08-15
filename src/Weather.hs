@@ -9,7 +9,7 @@ module Weather
 where
 
 import Control.Applicative ((<|>))
-import Network.HTTP.Client.TLS (newTlsManager)
+import Network.HTTP.Client (Manager)
 import Servant (Get, JSON, Proxy (..), QueryParam, type (:>))
 import Servant.Client
   ( BaseUrl (BaseUrl),
@@ -51,12 +51,10 @@ query apiKey lat lon =
     (Just "metric")
     (Just apiKey)
 
-getWeather :: Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
-getWeather lat lon = do
+getWeather :: Manager -> Maybe Double -> Maybe Double -> IO (Either ClientError Weather)
+getWeather tlsManager lat lon = do
   apiKey <- getEnv "WEATHER_API_KEY"
   apiRoot <- getEnv "WEATHER_API_ROOT" <|> pure "data"
 
-  m <- newTlsManager
-
   let url = BaseUrl Https "api.openweathermap.org" 443 apiRoot
-  runClientM (query apiKey lat lon) $ mkClientEnv m url
+  runClientM (query apiKey lat lon) $ mkClientEnv tlsManager url
