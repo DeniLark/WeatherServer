@@ -39,7 +39,7 @@ library
         http-client-tls ^>=0.3.6.3,
         http-client,
         aeson ^>=2.2.1.0,
-        tls ^>=1.8.0,
+        tls,
         yaml ^>=0.11.11.2,
         warp,
         cache,
@@ -47,7 +47,8 @@ library
         clock,
         servant-swagger,
         swagger2,
-        servant-swagger-ui
+        servant-swagger-ui,
+        async
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -63,7 +64,7 @@ executable WeatherServer
         http-client-tls ^>=0.3.6.3,
         http-client,
         aeson ^>=2.2.1.0,
-        tls ^>=1.8.0,
+        tls,
         yaml ^>=0.11.11.2,
         warp,
         cache,
@@ -72,6 +73,7 @@ executable WeatherServer
         servant-swagger,
         servant-swagger-ui,
         swagger2,
+        async,
         WeatherServer
     hs-source-dirs:   app
     default-language: Haskell2010

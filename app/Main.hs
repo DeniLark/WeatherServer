@@ -6,7 +6,8 @@
 module Main where
 
 import Config (Config (..), getConfig)
-import Control.Concurrent (forkIO)
+import Control.Applicative ((<|>))
+import Control.Concurrent.Async (Concurrently (Concurrently, runConcurrently))
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Cache (Cache)
 import qualified Data.Cache as Cache
@@ -142,8 +143,10 @@ main = do
           updatePeriod = configUpdatePeriod config
           offsetLocations = configOffsetLocations config
           offsetTime = congigOffsetTime config
+          actionFillCache =
+            collectionWeather tlsManager updatePeriod cache locations
+          actionServer = do
+            putStrLn $ "Server was started http://localhost:" <> show port
+            run port $ app tlsManager offsetLocations offsetTime cache
 
-      _ <- forkIO $ collectionWeather tlsManager updatePeriod cache locations
-
-      putStrLn $ "Server was started http://localhost:" <> show port
-      run port $ app tlsManager offsetLocations offsetTime cache
+      runConcurrently $ Concurrently actionServer <|> Concurrently actionFillCache
